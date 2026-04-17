@@ -1,0 +1,5 @@
+.env
+*.exe
+elist
+COMMANDS.md
+plan.md
