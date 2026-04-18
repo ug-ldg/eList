@@ -82,3 +82,12 @@ func (s *TaskService) GetTree(ctx context.Context, userID int, id int) (*model.T
 
 	return task, nil
 }
+
+func (s *TaskService) GetRootTasks(ctx context.Context, userID int) ([]model.Task, error) {
+	tasks, err := s.repo.GetRootTasks(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	return tasks, nil
+}

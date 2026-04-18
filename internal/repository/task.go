@@ -154,3 +154,29 @@ func (r *TaskRepository) GetTree(ctx context.Context, userID int, id int) (*mode
 	}
 	return root, nil
 }
+
+func (r *TaskRepository) GetRootTasks(ctx context.Context, userID int) ([]model.Task, error) {
+	rows, err := r.pool.Query(ctx,
+		`SELECT id, user_id, title, parent_id, status, created_at, updated_at
+		FROM tasks WHERE user_id = $1 AND parent_id IS NULL`,
+		userID,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var tasks []model.Task
+	for rows.Next() {
+		var t model.Task
+		if err := rows.Scan(&t.ID, &t.UserID, &t.Title, &t.ParentID, &t.Status, &t.CreatedAt, &t.UpdatedAt); err != nil {
+			return nil, err
+		}
+
+		tasks = append(tasks, t)
+	}
+
+	return tasks, nil
+}

@@ -144,3 +144,15 @@ func (h *TaskHandler) GetTree(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(task)
 }
+
+func (h *TaskHandler) GetRootTasks(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value(middleware.UserIDKey).(int)
+	task, err := h.svc.GetRootTasks(r.Context(), userID)
+	if err != nil {
+		http.Error(w, "root tasks not found", http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(task)
+}
