@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/cors"
 	"github.com/joho/godotenv"
 	"github.com/ug-ldg/elist/internal/cache"
 	"github.com/ug-ldg/elist/internal/handler"
@@ -36,6 +37,12 @@ func main() {
 	authHandler := handler.NewAuthHandler(userRepo)
 
 	r := chi.NewRouter()
+
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins: []string{os.Getenv("FRONTEND_URL")},
+		AllowedMethods: []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS"},
+		AllowedHeaders: []string{"Authorization", "Content-Type"},
+	}))
 
 	// Auth routes — public
 	r.Get("/auth/google", authHandler.GoogleLogin)
