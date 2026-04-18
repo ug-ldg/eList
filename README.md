@@ -74,6 +74,20 @@ type Task struct {
 
 `ON DELETE CASCADE` in the schema ensures that deleting a parent task automatically removes all its subtasks.
 
+### Recursive Tree Traversal
+`GET /tasks/{id}/tree` returns a full nested tree using a PostgreSQL `WITH RECURSIVE` CTE — a single SQL query traverses the entire hierarchy regardless of depth:
+
+```
+Task 1 (root)
+├── Task 2
+│   ├── Task 4
+│   └── Task 5
+└── Task 3
+    └── Task 6
+```
+
+The flat SQL result is then assembled into a nested structure in Go using a map for O(n) tree construction.
+
 ## Project Structure
 
 ```
@@ -112,6 +126,7 @@ eList/
 | `GET`    | `/tasks/{id}/children`   | Get direct subtasks                |
 | `PATCH`  | `/tasks/{id}/status`     | Update task status                 |
 | `DELETE` | `/tasks/{id}`            | Delete a task and its subtasks     |
+| `GET`    | `/tasks/{id}/tree`       | Get full nested task tree          |
 | `GET`    | `/stats`                 | Get task statistics (concurrent)   |
 
 ### Request & Response Examples
@@ -134,6 +149,29 @@ PATCH /tasks/1/status
 { "status": "in_progress" }
 ```
 Status values: `pending`, `in_progress`, `done`
+
+**Get full tree**
+```json
+GET /tasks/1/tree
+
+{
+    "id": 1,
+    "title": "My project",
+    "status": "pending",
+    "created_at": "...",
+    "updated_at": "...",
+    "children": [
+        {
+            "id": 2,
+            "title": "Phase 1",
+            "status": "pending",
+            "children": [
+                { "id": 4, "title": "Task A", "status": "done", "children": [] }
+            ]
+        }
+    ]
+}
+```
 
 **Get statistics**
 ```json
