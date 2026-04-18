@@ -155,6 +155,40 @@ func (r *TaskRepository) GetTree(ctx context.Context, userID int, id int) (*mode
 	return root, nil
 }
 
+func (r *TaskRepository) GetAncestors(ctx context.Context, userID int, id int) ([]model.Breadcrumb, error) {
+	rows, err := r.pool.Query(ctx, `
+		WITH RECURSIVE ancestors AS (
+			SELECT id, title, parent_id
+			FROM tasks WHERE id = $1 AND user_id = $2
+			UNION ALL
+			SELECT t.id, t.title, t.parent_id
+			FROM tasks t
+			INNER JOIN ancestors a ON t.id = a.parent_id
+		)
+		SELECT id, title FROM ancestors
+	`, id, userID)
+
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var crumbs []model.Breadcrumb
+	for rows.Next() {
+		var b model.Breadcrumb
+		if err := rows.Scan(&b.ID, &b.Title); err != nil {
+			return nil, err
+		}
+		crumbs = append(crumbs, b)
+	}
+
+	for i, j := 0, len(crumbs)-1; i < j; i, j = i+1, j-1 {
+		crumbs[i], crumbs[j] = crumbs[j], crumbs[i]
+	}
+
+	return crumbs, nil
+}
+
 func (r *TaskRepository) GetRootTasks(ctx context.Context, userID int) ([]model.Task, error) {
 	rows, err := r.pool.Query(ctx,
 		`SELECT id, user_id, title, parent_id, status, created_at, updated_at

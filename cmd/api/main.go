@@ -58,6 +58,7 @@ func main() {
 		r.Patch("/tasks/{id}/status", taskHandler.UpdateStatus)
 		r.Delete("/tasks/{id}", taskHandler.DeleteTask)
 		r.Get("/tasks/{id}/tree", taskHandler.GetTree)
+		r.Get("/tasks/{id}/ancestors", taskHandler.GetAncestors)
 		r.Get("/tasks", taskHandler.GetRootTasks)
 		r.Get("/stats", statsHandler.Get)
 	})

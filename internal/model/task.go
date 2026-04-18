@@ -12,6 +12,11 @@ type Task struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+type Breadcrumb struct {
+	ID    int    `json:"id"`
+	Title string `json:"title"`
+}
+
 type TaskNode struct {
 	ID        int         `json:"id"`
 	Title     string      `json:"title"`
