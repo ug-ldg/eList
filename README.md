@@ -7,9 +7,11 @@ A hierarchical task management REST API built in Go, designed as a portfolio pro
 - **Go** — main language
 - **PostgreSQL** — persistent storage
 - **Redis** — in-memory cache
-- **Chi** — HTTP router
+- **Chi** — HTTP router + middleware
 - **pgx v5** — PostgreSQL driver with connection pooling
 - **Docker** — local infrastructure
+- **OAuth 2.0** — Google authentication (`golang.org/x/oauth2`)
+- **JWT** — stateless authentication tokens (`golang-jwt/jwt`)
 
 ## Key Engineering Concepts Demonstrated
 
@@ -57,6 +59,19 @@ goroutine 3 → SELECT COUNT(*) WHERE parent_id IS NULL   ─┘
 ```
 
 A `sync.WaitGroup` waits for all goroutines to complete. A `sync.Mutex` protects concurrent writes to the shared result struct. This reduces latency from 3× to ~1× the cost of a single query.
+
+### OAuth 2.0 + JWT Authentication
+`GET /auth/google` redirects to Google. After consent, Google calls back `/auth/google/callback`:
+
+1. Exchange the OAuth code for a Google access token
+2. Fetch the user's profile (email, name, provider ID)
+3. Upsert the user in PostgreSQL (`ON CONFLICT DO UPDATE`)
+4. Generate a signed JWT containing `user_id` (TTL: 24h)
+5. Return the JWT to the client
+
+All task endpoints require `Authorization: Bearer <token>`. A Chi middleware validates the JWT and injects `user_id` into the request context — handlers extract it and pass it down to the service and repository layers.
+
+Each task is owned by a user via a `user_id` foreign key. All SQL queries filter by `user_id`, so users can only see and modify their own tasks. The Redis cache key also includes `user_id` (`task:{userID}:{taskID}`) to prevent cross-user cache leaks.
 
 ### Self-Referencing Data Model
 Tasks form a tree structure via a self-referencing foreign key:
@@ -118,6 +133,15 @@ eList/
 ```
 
 ## API Endpoints
+
+### Authentication (public)
+
+| Method | URL                        | Description                          |
+|--------|----------------------------|--------------------------------------|
+| `GET`  | `/auth/google`             | Redirect to Google OAuth             |
+| `GET`  | `/auth/google/callback`    | OAuth callback — returns JWT         |
+
+### Tasks & Stats (requires `Authorization: Bearer <token>`)
 
 | Method   | URL                      | Description                        |
 |----------|--------------------------|------------------------------------|
@@ -202,9 +226,24 @@ docker-compose up -d
 
 # Apply database migrations (PowerShell)
 Get-Content migrations/001_create_tasks.sql | docker exec -i elist-postgres-1 psql -U elist_user -d elist_db
+Get-Content migrations/002_add_users.sql | docker exec -i elist-postgres-1 psql -U elist_user -d elist_db
 
 # Run the API
 go run ./cmd/api
 ```
+
+Add the following to your `.env` file:
+
+```env
+GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your-client-secret
+JWT_SECRET=a-long-random-string
+```
+
+**Authentication flow:**
+1. Open `http://localhost:8080/auth/google` in your browser
+2. Sign in with Google
+3. Copy the returned `token`
+4. Add `Authorization: Bearer <token>` to all subsequent requests
 
 The API will be available at `http://localhost:8080`.
