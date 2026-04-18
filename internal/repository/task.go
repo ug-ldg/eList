@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -147,5 +148,9 @@ func (r *TaskRepository) GetTree(ctx context.Context, userID int, id int) (*mode
 		}
 	}
 
-	return nodes[rootID], nil
+	root, ok := nodes[rootID]
+	if !ok || root == nil {
+		return nil, errors.New("task not found")
+	}
+	return root, nil
 }

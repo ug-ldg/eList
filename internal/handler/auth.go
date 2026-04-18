@@ -21,7 +21,7 @@ func NewAuthHandler(userRepo *repository.UserRepository) *AuthHandler {
 	cfg := &oauth2.Config{
 		ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
 		ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
-		RedirectURL:  "http://localhost:8080/auth/google/callback",
+		RedirectURL:  os.Getenv("GOOGLE_REDIRECT_URL"),
 		Scopes:       []string{"openid", "email", "profile"},
 		Endpoint:     google.Endpoint,
 	}
@@ -76,6 +76,5 @@ func (h *AuthHandler) GoogleCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"token": jwt})
+	http.Redirect(w, r, os.Getenv("FRONTEND_URL")+"/login?token="+jwt, http.StatusTemporaryRedirect)
 }

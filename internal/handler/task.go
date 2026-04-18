@@ -137,7 +137,7 @@ func (h *TaskHandler) GetTree(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value(middleware.UserIDKey).(int)
 	task, err := h.svc.GetTree(r.Context(), userID, id)
 	if err != nil {
-		http.Error(w, "failed to get tree", http.StatusInternalServerError)
+		http.Error(w, "task not found", http.StatusNotFound)
 		return
 	}
 
