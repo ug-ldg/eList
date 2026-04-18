@@ -104,3 +104,19 @@ func (h *TaskHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(task)
 }
+
+func (h *TaskHandler) DeleteTask(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		http.Error(w, "invalid id", http.StatusBadRequest)
+		return
+	}
+
+	err = h.svc.DeleteTask(r.Context(), id)
+	if err != nil {
+		http.Error(w, "failed to delete task", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}

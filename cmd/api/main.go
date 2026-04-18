@@ -37,6 +37,7 @@ func main() {
 	r.Get("/tasks/{id}", taskHandler.Get)
 	r.Get("/tasks/{id}/children", taskHandler.GetChildren)
 	r.Patch("/tasks/{id}/status", taskHandler.UpdateStatus)
+	r.Delete("/tasks/{id}", taskHandler.DeleteTask)
 
 	r.Get("/stats", statsHandler.Get)
 

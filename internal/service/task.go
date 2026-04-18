@@ -69,3 +69,7 @@ func (s *TaskService) UpdateTaskStatus(ctx context.Context, id int, status strin
 	_ = s.cache.Delete(ctx, id)
 	return task, nil
 }
+
+func (s *TaskService) DeleteTask(ctx context.Context, id int) error {
+	return s.repo.DeleteTask(ctx, id)
+}

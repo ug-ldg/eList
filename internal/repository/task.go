@@ -90,3 +90,12 @@ func (r *TaskRepository) UpdateTaskStatus(ctx context.Context, id int, status st
 
 	return &t, nil
 }
+
+func (r *TaskRepository) DeleteTask(ctx context.Context, id int) error {
+	_, err := r.pool.Exec(ctx,
+		`DELETE FROM tasks WHERE id = $1`,
+		id,
+	)
+
+	return err
+}
