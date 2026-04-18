@@ -214,3 +214,20 @@ func (r *TaskRepository) GetRootTasks(ctx context.Context, userID int) ([]model.
 
 	return tasks, nil
 }
+
+func (r *TaskRepository) UpdateTaskParent(ctx context.Context, userID int, id int, parentID *int) (*model.Task, error) {
+	row := r.pool.QueryRow(ctx,
+		`UPDATE tasks SET parent_id = $1, updated_at = $2 WHERE id = $3 AND user_id = $4
+		RETURNING id, user_id, title, parent_id, status, created_at, updated_at`,
+		parentID, time.Now(), id, userID,
+	)
+
+	var t model.Task
+	err := row.Scan(&t.ID, &t.UserID, &t.Title, &t.ParentID, &t.Status, &t.CreatedAt, &t.UpdatedAt)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &t, nil
+}

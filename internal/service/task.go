@@ -95,3 +95,13 @@ func (s *TaskService) GetRootTasks(ctx context.Context, userID int) ([]model.Tas
 
 	return tasks, nil
 }
+
+func (s *TaskService) UpdateTaskParent(ctx context.Context, userID int, id int, parentID *int) (*model.Task, error) {
+	task, err := s.repo.UpdateTaskParent(ctx, userID, id, parentID)
+	if err != nil {
+		return nil, err
+	}
+
+	_ = s.cache.Delete(ctx, userID, id)
+	return task, nil
+}

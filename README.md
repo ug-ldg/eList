@@ -112,21 +112,29 @@ eList/
 │       └── main.go          # Entry point — wires all layers together
 ├── internal/
 │   ├── model/
-│   │   ├── task.go          # Task struct
+│   │   ├── task.go          # Task, TaskNode, Breadcrumb structs
+│   │   ├── user.go          # User struct
 │   │   └── stats.go         # Stats struct
 │   ├── repository/
 │   │   ├── db.go            # PostgreSQL connection pool
 │   │   ├── task.go          # SQL queries for tasks
+│   │   ├── user.go          # User upsert
 │   │   └── stats.go         # Concurrent stats queries
 │   ├── service/
 │   │   └── task.go          # Business logic and validation
 │   ├── cache/
-│   │   └── task.go          # Redis cache layer
+│   │   └── task.go          # Redis cache layer (key: task:{userID}:{id})
+│   ├── auth/
+│   │   └── jwt.go           # JWT generation and validation
+│   ├── middleware/
+│   │   └── auth.go          # Bearer token validation + userID injection
 │   └── handler/
 │       ├── task.go          # HTTP handlers for tasks
+│       ├── auth.go          # Google OAuth handlers
 │       └── stats.go         # HTTP handler for stats
 ├── migrations/
-│   └── 001_create_tasks.sql # Database schema
+│   ├── 001_create_tasks.sql # Database schema
+│   └── 002_add_users.sql    # Users table + user_id FK on tasks
 ├── docker-compose.yml
 ├── .env
 └── go.mod
@@ -151,6 +159,9 @@ eList/
 | `PATCH`  | `/tasks/{id}/status`     | Update task status                 |
 | `DELETE` | `/tasks/{id}`            | Delete a task and its subtasks     |
 | `GET`    | `/tasks/{id}/tree`       | Get full nested task tree          |
+| `GET`    | `/tasks/{id}/ancestors`  | Get breadcrumb path to root        |
+| `GET`    | `/tasks`                 | Get root tasks (no parent)         |
+| `PATCH`  | `/tasks/{id}/parent`     | Move a task to a new parent        |
 | `GET`    | `/stats`                 | Get task statistics (concurrent)   |
 
 ### Request & Response Examples

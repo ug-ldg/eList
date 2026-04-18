@@ -174,3 +174,30 @@ func (h *TaskHandler) GetRootTasks(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(task)
 }
+
+func (h *TaskHandler) UpdateTaskParent(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		http.Error(w, "invalid id", http.StatusBadRequest)
+		return
+	}
+
+	var input struct {
+		ParentID *int `json:"parent_id"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	userID := r.Context().Value(middleware.UserIDKey).(int)
+	task, err := h.svc.UpdateTaskParent(r.Context(), userID, id, input.ParentID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(task)
+}
