@@ -29,12 +29,16 @@ func main() {
 	taskCache := cache.NewTaskCache(os.Getenv("REDIS_ADDR"))
 	taskSvc := service.NewTaskService(taskRepo, taskCache)
 	taskHandler := handler.NewTaskHandler(taskSvc)
+	statsRepo := repository.NewStatsRepository(pool)
+	statsHandler := handler.NewStatsHandler(statsRepo)
 
 	r := chi.NewRouter()
 	r.Post("/tasks", taskHandler.Create)
 	r.Get("/tasks/{id}", taskHandler.Get)
 	r.Get("/tasks/{id}/children", taskHandler.GetChildren)
 	r.Patch("/tasks/{id}/status", taskHandler.UpdateStatus)
+
+	r.Get("/stats", statsHandler.Get)
 
 	port := os.Getenv("PORT")
 	fmt.Printf("server listening on port %s\n", port)
