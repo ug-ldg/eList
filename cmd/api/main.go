@@ -10,6 +10,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/ug-ldg/elist/internal/cache"
 	"github.com/ug-ldg/elist/internal/handler"
+	appMiddleware "github.com/ug-ldg/elist/internal/middleware"
 	"github.com/ug-ldg/elist/internal/repository"
 	"github.com/ug-ldg/elist/internal/service"
 )
@@ -31,17 +32,27 @@ func main() {
 	taskHandler := handler.NewTaskHandler(taskSvc)
 	statsRepo := repository.NewStatsRepository(pool)
 	statsHandler := handler.NewStatsHandler(statsRepo)
+	userRepo := repository.NewUserRepository(pool)
+	authHandler := handler.NewAuthHandler(userRepo)
 
 	r := chi.NewRouter()
-	r.Post("/tasks", taskHandler.Create)
-	r.Get("/tasks/{id}", taskHandler.Get)
-	r.Get("/tasks/{id}/children", taskHandler.GetChildren)
-	r.Patch("/tasks/{id}/status", taskHandler.UpdateStatus)
-	r.Delete("/tasks/{id}", taskHandler.DeleteTask)
 
-	r.Get("/tasks/{id}/tree", taskHandler.GetTree)
+	// Auth routes — public
+	r.Get("/auth/google", authHandler.GoogleLogin)
+	r.Get("/auth/google/callback", authHandler.GoogleCallback)
 
-	r.Get("/stats", statsHandler.Get)
+	// Task + stats routes — protected
+	r.Group(func(r chi.Router) {
+		r.Use(appMiddleware.Authenticate)
+
+		r.Post("/tasks", taskHandler.Create)
+		r.Get("/tasks/{id}", taskHandler.Get)
+		r.Get("/tasks/{id}/children", taskHandler.GetChildren)
+		r.Patch("/tasks/{id}/status", taskHandler.UpdateStatus)
+		r.Delete("/tasks/{id}", taskHandler.DeleteTask)
+		r.Get("/tasks/{id}/tree", taskHandler.GetTree)
+		r.Get("/stats", statsHandler.Get)
+	})
 
 	port := os.Getenv("PORT")
 	fmt.Printf("server listening on port %s\n", port)

@@ -24,8 +24,8 @@ func NewTaskCache(addr string) *TaskCache {
 	return &TaskCache{client: client}
 }
 
-func (c *TaskCache) Get(ctx context.Context, id int) (*model.Task, error) {
-	val, err := c.client.Get(ctx, taskKey(id)).Result()
+func (c *TaskCache) Get(ctx context.Context, userID int, id int) (*model.Task, error) {
+	val, err := c.client.Get(ctx, taskKey(userID, id)).Result()
 	if err != nil {
 		return nil, err
 	}
@@ -44,13 +44,13 @@ func (c *TaskCache) Set(ctx context.Context, task *model.Task) error {
 		return err
 	}
 
-	return c.client.Set(ctx, taskKey(task.ID), bytes, taskTTL).Err()
+	return c.client.Set(ctx, taskKey(task.UserID, task.ID), bytes, taskTTL).Err()
 }
 
-func (c *TaskCache) Delete(ctx context.Context, id int) error {
-	return c.client.Del(ctx, taskKey(id)).Err()
+func (c *TaskCache) Delete(ctx context.Context, userID int, id int) error {
+	return c.client.Del(ctx, taskKey(userID, id)).Err()
 }
 
-func taskKey(id int) string {
-	return "task:" + strconv.Itoa(id)
+func taskKey(userID int, id int) string {
+	return "task:" + strconv.Itoa(userID) + ":" + strconv.Itoa(id)
 }

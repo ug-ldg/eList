@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/ug-ldg/elist/internal/middleware"
 	"github.com/ug-ldg/elist/internal/service"
 )
 
@@ -28,7 +29,8 @@ func (h *TaskHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	task, err := h.svc.CreateTask(r.Context(), input.Title, input.ParentID)
+	userID := r.Context().Value(middleware.UserIDKey).(int)
+	task, err := h.svc.CreateTask(r.Context(), userID, input.Title, input.ParentID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -46,7 +48,8 @@ func (h *TaskHandler) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	task, fromCache, err := h.svc.GetTask(r.Context(), id)
+	userID := r.Context().Value(middleware.UserIDKey).(int)
+	task, fromCache, err := h.svc.GetTask(r.Context(), userID, id)
 	if err != nil {
 		http.Error(w, "task not found", http.StatusNotFound)
 		return
@@ -69,7 +72,8 @@ func (h *TaskHandler) GetChildren(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	task, err := h.svc.GetChildren(r.Context(), id)
+	userID := r.Context().Value(middleware.UserIDKey).(int)
+	task, err := h.svc.GetChildren(r.Context(), userID, id)
 	if err != nil {
 		http.Error(w, "failed to get children", http.StatusInternalServerError)
 		return
@@ -95,7 +99,8 @@ func (h *TaskHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	task, err := h.svc.UpdateTaskStatus(r.Context(), id, input.Status)
+	userID := r.Context().Value(middleware.UserIDKey).(int)
+	task, err := h.svc.UpdateTaskStatus(r.Context(), userID, id, input.Status)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -112,7 +117,8 @@ func (h *TaskHandler) DeleteTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.svc.DeleteTask(r.Context(), id)
+	userID := r.Context().Value(middleware.UserIDKey).(int)
+	err = h.svc.DeleteTask(r.Context(), userID, id)
 	if err != nil {
 		http.Error(w, "failed to delete task", http.StatusInternalServerError)
 		return
@@ -128,7 +134,8 @@ func (h *TaskHandler) GetTree(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	task, err := h.svc.GetTree(r.Context(), id)
+	userID := r.Context().Value(middleware.UserIDKey).(int)
+	task, err := h.svc.GetTree(r.Context(), userID, id)
 	if err != nil {
 		http.Error(w, "failed to get tree", http.StatusInternalServerError)
 		return

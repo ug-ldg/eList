@@ -25,16 +25,16 @@ func NewTaskService(repo *repository.TaskRepository, cache *cache.TaskCache) *Ta
 	return &TaskService{repo: repo, cache: cache}
 }
 
-func (s *TaskService) CreateTask(ctx context.Context, title string, parentID *int) (*model.Task, error) {
+func (s *TaskService) CreateTask(ctx context.Context, userID int, title string, parentID *int) (*model.Task, error) {
 	if title == "" {
 		return nil, errors.New("title cannot be empty")
 	}
 
-	return s.repo.CreateTask(ctx, title, parentID)
+	return s.repo.CreateTask(ctx, userID, title, parentID)
 }
 
-func (s *TaskService) GetTask(ctx context.Context, id int) (*model.Task, bool, error) {
-	task, err := s.cache.Get(ctx, id)
+func (s *TaskService) GetTask(ctx context.Context, userID int, id int) (*model.Task, bool, error) {
+	task, err := s.cache.Get(ctx, userID, id)
 	if err == nil {
 		return task, true, nil
 	}
@@ -43,7 +43,7 @@ func (s *TaskService) GetTask(ctx context.Context, id int) (*model.Task, bool, e
 		return nil, false, err
 	}
 
-	task, err = s.repo.GetTask(ctx, id)
+	task, err = s.repo.GetTask(ctx, userID, id)
 	if err != nil {
 		return nil, false, err
 	}
@@ -52,30 +52,30 @@ func (s *TaskService) GetTask(ctx context.Context, id int) (*model.Task, bool, e
 	return task, false, nil
 }
 
-func (s *TaskService) GetChildren(ctx context.Context, parentID int) ([]model.Task, error) {
-	return s.repo.GetChildren(ctx, parentID)
+func (s *TaskService) GetChildren(ctx context.Context, userID int, parentID int) ([]model.Task, error) {
+	return s.repo.GetChildren(ctx, userID, parentID)
 }
 
-func (s *TaskService) UpdateTaskStatus(ctx context.Context, id int, status string) (*model.Task, error) {
+func (s *TaskService) UpdateTaskStatus(ctx context.Context, userID int, id int, status string) (*model.Task, error) {
 	if !validStatuses[status] {
 		return nil, errors.New("invalid status: must be pending, in_progress or done")
 	}
 
-	task, err := s.repo.UpdateTaskStatus(ctx, id, status)
+	task, err := s.repo.UpdateTaskStatus(ctx, userID, id, status)
 	if err != nil {
 		return nil, err
 	}
 
-	_ = s.cache.Delete(ctx, id)
+	_ = s.cache.Delete(ctx, userID, id)
 	return task, nil
 }
 
-func (s *TaskService) DeleteTask(ctx context.Context, id int) error {
-	return s.repo.DeleteTask(ctx, id)
+func (s *TaskService) DeleteTask(ctx context.Context, userID int, id int) error {
+	return s.repo.DeleteTask(ctx, userID, id)
 }
 
-func (s *TaskService) GetTree(ctx context.Context, id int) (*model.TaskNode, error) {
-	task, err := s.repo.GetTree(ctx, id)
+func (s *TaskService) GetTree(ctx context.Context, userID int, id int) (*model.TaskNode, error) {
+	task, err := s.repo.GetTree(ctx, userID, id)
 	if err != nil {
 		return nil, err
 	}

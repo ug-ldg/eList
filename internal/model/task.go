@@ -4,6 +4,7 @@ import "time"
 
 type Task struct {
 	ID        int       `json:"id"`
+	UserID    int       `json:"user_id"`
 	Title     string    `json:"title"`
 	ParentID  *int      `json:"parent_id,omitempty"`
 	Status    string    `json:"status"`
