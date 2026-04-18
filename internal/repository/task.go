@@ -17,16 +17,15 @@ func NewTaskRepository(pool *pgxpool.Pool) *TaskRepository {
 	return &TaskRepository{pool: pool}
 }
 
-func (r *TaskRepository) CreateTask(ctx context.Context, userID int, title string, parentID *int) (*model.Task, error) {
+func (r *TaskRepository) CreateTask(ctx context.Context, userID int, title string, parentID *int, note *string, icon string) (*model.Task, error) {
 	row := r.pool.QueryRow(ctx,
-		`INSERT INTO tasks (user_id, title, parent_id) VALUES($1, $2, $3)
-		RETURNING id, user_id, title, parent_id, status, created_at, updated_at`,
-		userID, title, parentID,
+		`INSERT INTO tasks (user_id, title, parent_id, note, icon) VALUES($1, $2, $3, $4, $5)
+		RETURNING id, user_id, title, parent_id, status, note, icon, created_at, updated_at`,
+		userID, title, parentID, note, icon,
 	)
 
 	var t model.Task
-	err := row.Scan(&t.ID, &t.UserID, &t.Title, &t.ParentID, &t.Status, &t.CreatedAt, &t.UpdatedAt)
-
+	err := row.Scan(&t.ID, &t.UserID, &t.Title, &t.ParentID, &t.Status, &t.Note, &t.Icon, &t.CreatedAt, &t.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -36,13 +35,13 @@ func (r *TaskRepository) CreateTask(ctx context.Context, userID int, title strin
 
 func (r *TaskRepository) GetTask(ctx context.Context, userID int, id int) (*model.Task, error) {
 	row := r.pool.QueryRow(ctx,
-		`SELECT id, user_id, title, parent_id, status, created_at, updated_at FROM tasks WHERE user_id = $1 AND id = $2`,
+		`SELECT id, user_id, title, parent_id, status, note, icon, created_at, updated_at
+		FROM tasks WHERE user_id = $1 AND id = $2`,
 		userID, id,
 	)
 
 	var t model.Task
-	err := row.Scan(&t.ID, &t.UserID, &t.Title, &t.ParentID, &t.Status, &t.CreatedAt, &t.UpdatedAt)
-
+	err := row.Scan(&t.ID, &t.UserID, &t.Title, &t.ParentID, &t.Status, &t.Note, &t.Icon, &t.CreatedAt, &t.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -52,23 +51,21 @@ func (r *TaskRepository) GetTask(ctx context.Context, userID int, id int) (*mode
 
 func (r *TaskRepository) GetChildren(ctx context.Context, userID int, parentID int) ([]model.Task, error) {
 	rows, err := r.pool.Query(ctx,
-		`SELECT id, user_id, title, parent_id, status, created_at, updated_at FROM tasks WHERE user_id = $1 AND parent_id = $2`,
+		`SELECT id, user_id, title, parent_id, status, note, icon, created_at, updated_at
+		FROM tasks WHERE user_id = $1 AND parent_id = $2 ORDER BY title ASC`,
 		userID, parentID,
 	)
-
 	if err != nil {
 		return nil, err
 	}
-
 	defer rows.Close()
 
 	var tasks []model.Task
 	for rows.Next() {
 		var t model.Task
-		if err := rows.Scan(&t.ID, &t.UserID, &t.Title, &t.ParentID, &t.Status, &t.CreatedAt, &t.UpdatedAt); err != nil {
+		if err := rows.Scan(&t.ID, &t.UserID, &t.Title, &t.ParentID, &t.Status, &t.Note, &t.Icon, &t.CreatedAt, &t.UpdatedAt); err != nil {
 			return nil, err
 		}
-
 		tasks = append(tasks, t)
 	}
 
@@ -78,13 +75,29 @@ func (r *TaskRepository) GetChildren(ctx context.Context, userID int, parentID i
 func (r *TaskRepository) UpdateTaskStatus(ctx context.Context, userID int, id int, status string) (*model.Task, error) {
 	row := r.pool.QueryRow(ctx,
 		`UPDATE tasks SET status = $1, updated_at = $2 WHERE user_id = $3 AND id = $4
-		RETURNING id, user_id, title, parent_id, status, created_at, updated_at`,
+		RETURNING id, user_id, title, parent_id, status, note, icon, created_at, updated_at`,
 		status, time.Now(), userID, id,
 	)
 
 	var t model.Task
-	err := row.Scan(&t.ID, &t.UserID, &t.Title, &t.ParentID, &t.Status, &t.CreatedAt, &t.UpdatedAt)
+	err := row.Scan(&t.ID, &t.UserID, &t.Title, &t.ParentID, &t.Status, &t.Note, &t.Icon, &t.CreatedAt, &t.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
 
+	return &t, nil
+}
+
+func (r *TaskRepository) UpdateTask(ctx context.Context, userID int, id int, title string, status string, note *string, icon string) (*model.Task, error) {
+	row := r.pool.QueryRow(ctx,
+		`UPDATE tasks SET title = $1, status = $2, note = $3, icon = $4, updated_at = $5
+		WHERE id = $6 AND user_id = $7
+		RETURNING id, user_id, title, parent_id, status, note, icon, created_at, updated_at`,
+		title, status, note, icon, time.Now(), id, userID,
+	)
+
+	var t model.Task
+	err := row.Scan(&t.ID, &t.UserID, &t.Title, &t.ParentID, &t.Status, &t.Note, &t.Icon, &t.CreatedAt, &t.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -191,24 +204,21 @@ func (r *TaskRepository) GetAncestors(ctx context.Context, userID int, id int) (
 
 func (r *TaskRepository) GetRootTasks(ctx context.Context, userID int) ([]model.Task, error) {
 	rows, err := r.pool.Query(ctx,
-		`SELECT id, user_id, title, parent_id, status, created_at, updated_at
-		FROM tasks WHERE user_id = $1 AND parent_id IS NULL`,
+		`SELECT id, user_id, title, parent_id, status, note, icon, created_at, updated_at
+		FROM tasks WHERE user_id = $1 AND parent_id IS NULL ORDER BY title ASC`,
 		userID,
 	)
-
 	if err != nil {
 		return nil, err
 	}
-
 	defer rows.Close()
 
 	var tasks []model.Task
 	for rows.Next() {
 		var t model.Task
-		if err := rows.Scan(&t.ID, &t.UserID, &t.Title, &t.ParentID, &t.Status, &t.CreatedAt, &t.UpdatedAt); err != nil {
+		if err := rows.Scan(&t.ID, &t.UserID, &t.Title, &t.ParentID, &t.Status, &t.Note, &t.Icon, &t.CreatedAt, &t.UpdatedAt); err != nil {
 			return nil, err
 		}
-
 		tasks = append(tasks, t)
 	}
 
@@ -218,13 +228,12 @@ func (r *TaskRepository) GetRootTasks(ctx context.Context, userID int) ([]model.
 func (r *TaskRepository) UpdateTaskParent(ctx context.Context, userID int, id int, parentID *int) (*model.Task, error) {
 	row := r.pool.QueryRow(ctx,
 		`UPDATE tasks SET parent_id = $1, updated_at = $2 WHERE id = $3 AND user_id = $4
-		RETURNING id, user_id, title, parent_id, status, created_at, updated_at`,
+		RETURNING id, user_id, title, parent_id, status, note, icon, created_at, updated_at`,
 		parentID, time.Now(), id, userID,
 	)
 
 	var t model.Task
-	err := row.Scan(&t.ID, &t.UserID, &t.Title, &t.ParentID, &t.Status, &t.CreatedAt, &t.UpdatedAt)
-
+	err := row.Scan(&t.ID, &t.UserID, &t.Title, &t.ParentID, &t.Status, &t.Note, &t.Icon, &t.CreatedAt, &t.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}

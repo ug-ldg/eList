@@ -134,7 +134,8 @@ eList/
 │       └── stats.go         # HTTP handler for stats
 ├── migrations/
 │   ├── 001_create_tasks.sql # Database schema
-│   └── 002_add_users.sql    # Users table + user_id FK on tasks
+│   ├── 002_add_users.sql    # Users table + user_id FK on tasks
+│   └── 003_add_note_icon.sql # note (TEXT) and icon (VARCHAR) columns on tasks
 ├── docker-compose.yml
 ├── .env
 └── go.mod
@@ -162,6 +163,7 @@ eList/
 | `GET`    | `/tasks/{id}/ancestors`  | Get breadcrumb path to root        |
 | `GET`    | `/tasks`                 | Get root tasks (no parent)         |
 | `PATCH`  | `/tasks/{id}/parent`     | Move a task to a new parent        |
+| `PATCH`  | `/tasks/{id}`            | Update title, status, note, icon   |
 | `GET`    | `/stats`                 | Get task statistics (concurrent)   |
 
 ### Request & Response Examples

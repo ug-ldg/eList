@@ -20,8 +20,10 @@ func NewTaskHandler(svc *service.TaskService) *TaskHandler {
 
 func (h *TaskHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		Title    string `json:"title"`
-		ParentID *int   `json:"parent_id"`
+		Title    string  `json:"title"`
+		ParentID *int    `json:"parent_id"`
+		Note     *string `json:"note"`
+		Icon     string  `json:"icon"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -30,7 +32,7 @@ func (h *TaskHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userID := r.Context().Value(middleware.UserIDKey).(int)
-	task, err := h.svc.CreateTask(r.Context(), userID, input.Title, input.ParentID)
+	task, err := h.svc.CreateTask(r.Context(), userID, input.Title, input.ParentID, input.Note, input.Icon)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -168,6 +170,36 @@ func (h *TaskHandler) GetRootTasks(w http.ResponseWriter, r *http.Request) {
 	task, err := h.svc.GetRootTasks(r.Context(), userID)
 	if err != nil {
 		http.Error(w, "root tasks not found", http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(task)
+}
+
+func (h *TaskHandler) Update(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		http.Error(w, "invalid id", http.StatusBadRequest)
+		return
+	}
+
+	var input struct {
+		Title  string  `json:"title"`
+		Status string  `json:"status"`
+		Note   *string `json:"note"`
+		Icon   string  `json:"icon"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	userID := r.Context().Value(middleware.UserIDKey).(int)
+	task, err := h.svc.UpdateTask(r.Context(), userID, id, input.Title, input.Status, input.Note, input.Icon)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 

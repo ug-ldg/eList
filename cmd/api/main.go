@@ -56,6 +56,7 @@ func main() {
 		r.Get("/tasks/{id}", taskHandler.Get)
 		r.Get("/tasks/{id}/children", taskHandler.GetChildren)
 		r.Patch("/tasks/{id}/status", taskHandler.UpdateStatus)
+		r.Patch("/tasks/{id}", taskHandler.Update)
 		r.Patch("/tasks/{id}/parent", taskHandler.UpdateTaskParent)
 		r.Delete("/tasks/{id}", taskHandler.DeleteTask)
 		r.Get("/tasks/{id}/tree", taskHandler.GetTree)

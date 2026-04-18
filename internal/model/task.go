@@ -8,6 +8,8 @@ type Task struct {
 	Title     string    `json:"title"`
 	ParentID  *int      `json:"parent_id,omitempty"`
 	Status    string    `json:"status"`
+	Note      *string   `json:"note,omitempty"`
+	Icon      string    `json:"icon"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }

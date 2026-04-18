@@ -25,12 +25,16 @@ func NewTaskService(repo *repository.TaskRepository, cache *cache.TaskCache) *Ta
 	return &TaskService{repo: repo, cache: cache}
 }
 
-func (s *TaskService) CreateTask(ctx context.Context, userID int, title string, parentID *int) (*model.Task, error) {
+func (s *TaskService) CreateTask(ctx context.Context, userID int, title string, parentID *int, note *string, icon string) (*model.Task, error) {
 	if title == "" {
 		return nil, errors.New("title cannot be empty")
 	}
 
-	return s.repo.CreateTask(ctx, userID, title, parentID)
+	if icon == "" {
+		icon = "📁"
+	}
+
+	return s.repo.CreateTask(ctx, userID, title, parentID, note, icon)
 }
 
 func (s *TaskService) GetTask(ctx context.Context, userID int, id int) (*model.Task, bool, error) {
@@ -62,6 +66,24 @@ func (s *TaskService) UpdateTaskStatus(ctx context.Context, userID int, id int, 
 	}
 
 	task, err := s.repo.UpdateTaskStatus(ctx, userID, id, status)
+	if err != nil {
+		return nil, err
+	}
+
+	_ = s.cache.Delete(ctx, userID, id)
+	return task, nil
+}
+
+func (s *TaskService) UpdateTask(ctx context.Context, userID int, id int, title string, status string, note *string, icon string) (*model.Task, error) {
+	if title == "" {
+		return nil, errors.New("title cannot be empty")
+	}
+
+	if !validStatuses[status] {
+		return nil, errors.New("invalid status: must be pending, in_progress or done")
+	}
+
+	task, err := s.repo.UpdateTask(ctx, userID, id, title, status, note, icon)
 	if err != nil {
 		return nil, err
 	}
