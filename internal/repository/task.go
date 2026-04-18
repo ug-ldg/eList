@@ -99,3 +99,53 @@ func (r *TaskRepository) DeleteTask(ctx context.Context, id int) error {
 
 	return err
 }
+
+func (r *TaskRepository) GetTree(ctx context.Context, id int) (*model.TaskNode, error) {
+	rows, err := r.pool.Query(ctx, `
+			WITH RECURSIVE tree AS (
+				SELECT id, title, status, parent_id, created_at, updated_at
+				FROM tasks
+				WHERE id = $1
+				UNION ALL
+				SELECT t.id, t.title, t.status, t.parent_id, t.created_at, t.updated_at
+				FROM tasks t
+				INNER JOIN tree ON t.parent_id = tree.id
+			)
+			SELECT id, title, status, parent_id, created_at, updated_at FROM tree
+		 `, id)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	nodes := make(map[int]*model.TaskNode)
+	parents := make(map[int]*int)
+
+	var rootID int
+
+	for rows.Next() {
+		var node model.TaskNode
+		var parentID *int
+		err := rows.Scan(&node.ID, &node.Title, &node.Status, &parentID, &node.CreatedAt, &node.UpdatedAt)
+		if err != nil {
+			return nil, err
+		}
+		node.Children = []*model.TaskNode{}
+		nodes[node.ID] = &node
+		parents[node.ID] = parentID
+		if parentID == nil {
+			rootID = node.ID
+		}
+	}
+
+	for _, node := range nodes {
+		pid := parents[node.ID]
+		if pid != nil {
+			nodes[*pid].Children = append(nodes[*pid].Children, node)
+		}
+	}
+
+	return nodes[rootID], nil
+}

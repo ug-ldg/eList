@@ -39,6 +39,8 @@ func main() {
 	r.Patch("/tasks/{id}/status", taskHandler.UpdateStatus)
 	r.Delete("/tasks/{id}", taskHandler.DeleteTask)
 
+	r.Get("/tasks/{id}/tree", taskHandler.GetTree)
+
 	r.Get("/stats", statsHandler.Get)
 
 	port := os.Getenv("PORT")

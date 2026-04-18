@@ -73,3 +73,12 @@ func (s *TaskService) UpdateTaskStatus(ctx context.Context, id int, status strin
 func (s *TaskService) DeleteTask(ctx context.Context, id int) error {
 	return s.repo.DeleteTask(ctx, id)
 }
+
+func (s *TaskService) GetTree(ctx context.Context, id int) (*model.TaskNode, error) {
+	task, err := s.repo.GetTree(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	return task, nil
+}
