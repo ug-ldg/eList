@@ -105,13 +105,14 @@ eList/
 
 ## API Endpoints
 
-| Method  | URL                      | Description                        |
-|---------|--------------------------|------------------------------------|
-| `POST`  | `/tasks`                 | Create a task or subtask           |
-| `GET`   | `/tasks/{id}`            | Get a task by ID (cached)          |
-| `GET`   | `/tasks/{id}/children`   | Get direct subtasks                |
-| `PATCH` | `/tasks/{id}/status`     | Update task status                 |
-| `GET`   | `/stats`                 | Get task statistics (concurrent)   |
+| Method   | URL                      | Description                        |
+|----------|--------------------------|------------------------------------|
+| `POST`   | `/tasks`                 | Create a task or subtask           |
+| `GET`    | `/tasks/{id}`            | Get a task by ID (cached)          |
+| `GET`    | `/tasks/{id}/children`   | Get direct subtasks                |
+| `PATCH`  | `/tasks/{id}/status`     | Update task status                 |
+| `DELETE` | `/tasks/{id}`            | Delete a task and its subtasks     |
+| `GET`    | `/stats`                 | Get task statistics (concurrent)   |
 
 ### Request & Response Examples
 
